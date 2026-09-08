@@ -70,7 +70,10 @@ class ForecastRequest(BaseModel):
 
 class AskRequest(BaseModel):
     query: str
-    register: str = "researcher"  # "researcher" | "health_officer"
+
+
+class SynthesizeRequest(BaseModel):
+    context: dict
 
 
 # ----------------------------------------------------------------------
@@ -225,25 +228,33 @@ def compare_models(req: ForecastRequest):
 # ----------------------------------------------------------------------
 # LLM-primary answer composer
 # ----------------------------------------------------------------------
-LANGUAGE_INSTRUCTIONS = {
-    "english": "Respond in English.",
-}
-
-REGISTER_INSTRUCTIONS = {
-    "researcher": (
-        "Write for a malaria research audience: precise, willing to mention model "
-        "names, R-squared, calibration, and methodology where relevant."
-    ),
-    "health_officer": (
-        "Write for a district health officer with no machine learning background: "
-        "plain language, no jargon, focus on what the numbers mean for decisions, "
-        "briefly explain any technical term you must use."
-    ),
-}
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
 
-def _compose_answer(parsed: dict, forecast_result: dict | None, retrieved: list,
-                     register: str) -> tuple[str, bool]:
+def _groq_complete(system_prompt: str, user_prompt: str, max_tokens: int = 700) -> tuple[str | None, bool]:
+    """Shared Groq call used by /ask, /compare's synthesis, and /overview's
+    synthesis. Returns (text, success). Never raises -- failures are logged
+    and the caller decides on a fallback."""
+    if not GROQ_API_KEY:
+        return None, False
+    try:
+        from groq import Groq
+        client = Groq(api_key=GROQ_API_KEY)
+        completion = client.chat.completions.create(
+            model=GROQ_MODEL,
+            max_tokens=max_tokens,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        return completion.choices[0].message.content, True
+    except Exception as e:
+        print(f"Groq call failed: {e}")
+        return None, False
+
+
+def _compose_answer(parsed: dict, forecast_result: dict | None, retrieved: list) -> tuple[str, bool]:
     context_text = "\n\n".join(f"[{r['source']}] {r['text']}" for r in retrieved)
     forecast_text = json.dumps(forecast_result, indent=2) if forecast_result else "No specific region matched."
 
@@ -262,50 +273,39 @@ def _compose_answer(parsed: dict, forecast_result: dict | None, retrieved: list,
             "the Transformer. If asked why, say this plainly rather than guessing."
         )
 
-    if GROQ_API_KEY:
-        try:
-            from groq import Groq
-            client = Groq(api_key=GROQ_API_KEY)
-            system_prompt = (
-                "You are a malaria prevalence research assistant built on a real, "
-                "evaluated forecasting system. You must ONLY use the numeric forecast "
-                "data, SHAP explanation, and retrieved context given to you -- never "
-                "invent numbers, dates, or claims not present in the provided data. "
-                "If data is missing, say so plainly rather than guessing. Cite which "
-                "source (project findings or PubMed) any non-numeric claim comes from. "
-                "Respond in English. "
-                f"{REGISTER_INSTRUCTIONS.get(register, REGISTER_INSTRUCTIONS['researcher'])} "
-                "\n\nStructure every answer in exactly three labeled sections, on their own "
-                "lines:\n"
-                "Estimate: one or two sentences stating the numeric result and interval, if available.\n"
-                "Reasoning: explain WHY, referencing the specific SHAP feature contributions "
-                "by name and direction if given, and naming which retrieved finding "
-                "supports any claim about climate, interventions, or model choice. Be "
-                "concrete and specific, not generic.\n"
-                "Caveats: one sentence on what this estimate does NOT account for "
-                "(e.g. no live data feed, model-specific limitations, small region pool), "
-                "only if genuinely relevant to this answer.\n"
-                "Do not skip the Reasoning section even for short questions."
-            )
-            user_prompt = (
-                f"User question: {parsed['raw_query']}\n\n"
-                f"Forecast data (use these exact numbers if present):\n{forecast_text}"
-                f"{explanation_text}\n\n"
-                f"Retrieved context:\n{context_text}\n\n"
-                "Answer the user's question using only the above."
-            )
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                max_tokens=800,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-            )
-            return completion.choices[0].message.content, True
-        except Exception as e:
-            print(f"Groq call failed, falling back to template answer: {e}")
-            # falls through to the deterministic fallback below
+    system_prompt = (
+        "You are a malaria prevalence research assistant built on a real, "
+        "evaluated forecasting system. You must ONLY use the numeric forecast "
+        "data, SHAP explanation, and retrieved context given to you -- never "
+        "invent numbers, dates, or claims not present in the provided data. "
+        "If data is missing, say so plainly rather than guessing. Cite which "
+        "source (project findings or PubMed) any non-numeric claim comes from. "
+        "Respond in English, for a research audience: precise, willing to "
+        "mention model names, R-squared, calibration, and methodology where "
+        "relevant.\n\n"
+        "Structure every answer in exactly three labeled sections, on their own "
+        "lines:\n"
+        "Estimate: one or two sentences stating the numeric result and interval, if available.\n"
+        "Reasoning: explain WHY, referencing the specific SHAP feature contributions "
+        "by name and direction if given, and naming which retrieved finding "
+        "supports any claim about climate, interventions, or model choice. Be "
+        "concrete and specific, not generic.\n"
+        "Caveats: one sentence on what this estimate does NOT account for "
+        "(e.g. no live data feed, model-specific limitations, small region pool), "
+        "only if genuinely relevant to this answer.\n"
+        "Do not skip the Reasoning section even for short questions."
+    )
+    user_prompt = (
+        f"User question: {parsed['raw_query']}\n\n"
+        f"Forecast data (use these exact numbers if present):\n{forecast_text}"
+        f"{explanation_text}\n\n"
+        f"Retrieved context:\n{context_text}\n\n"
+        "Answer the user's question using only the above."
+    )
+
+    text, success = _groq_complete(system_prompt, user_prompt, max_tokens=800)
+    if success:
+        return text, True
 
     # ---- deterministic fallback if no API key is configured, or Groq call failed ----
     parts = []
@@ -343,7 +343,7 @@ def ask(req: AskRequest):
             forecast_result = None
 
     retrieved = rag_index.retrieve(req.query, k=4)
-    answer, llm_used = _compose_answer(parsed, forecast_result, retrieved, req.register)
+    answer, llm_used = _compose_answer(parsed, forecast_result, retrieved)
 
     seen, sources = set(), []
     for r in retrieved:
@@ -358,6 +358,57 @@ def ask(req: AskRequest):
         "sources": sources,
         "llm_used": llm_used,
     }
+
+
+@app.post("/compare/explain")
+def compare_explain(req: SynthesizeRequest):
+    """Groq-generated explanation of WHY the three models' estimates for one
+    region differ, grounded in this project's real density/climate findings."""
+    retrieved = rag_index.retrieve(
+        "why do model estimates differ, density, climate, transformer, boosting", k=3
+    )
+    context_text = "\n\n".join(f"[{r['source']}] {r['text']}" for r in retrieved)
+
+    system_prompt = (
+        "You compare three malaria forecasting models' estimates for the same "
+        "region. Use ONLY the numeric results given and the retrieved project "
+        "findings -- never invent a reason. If the estimates are close, say so "
+        "plainly rather than manufacturing a disagreement. Keep it to 2-3 sentences."
+    )
+    user_prompt = (
+        f"Model results for this region:\n{json.dumps(req.context, indent=2)}\n\n"
+        f"Project findings:\n{context_text}\n\n"
+        "Explain why these estimates agree or differ, grounded in the findings above."
+    )
+    text, success = _groq_complete(system_prompt, user_prompt, max_tokens=300)
+    if not success:
+        text = "LLM explanation unavailable right now (no key set, or the request failed)."
+    return {"explanation": text, "llm_used": success}
+
+
+@app.get("/overview/summary")
+def overview_summary():
+    """Groq-generated one-paragraph synthesis across all six countries,
+    grounded strictly in the real /overview numbers."""
+    ov = overview()
+    numbers_text = json.dumps(
+        [{"country": c["country"], "current_estimate": c["current_estimate"],
+          "n_regions": c["n_regions"], "model_used": c["model_used"]}
+         for c in ov["countries"]],
+        indent=2,
+    )
+    system_prompt = (
+        "You summarize current malaria estimates across six countries in one "
+        "short paragraph (3-4 sentences). Use ONLY the numbers given -- name "
+        "the highest and lowest estimate countries specifically, and mention "
+        "if any country's model choice differs from the others and why that "
+        "might matter for trust in the number."
+    )
+    user_prompt = f"Current estimates by country:\n{numbers_text}\n\nSummarize this."
+    text, success = _groq_complete(system_prompt, user_prompt, max_tokens=300)
+    if not success:
+        text = "LLM summary unavailable right now (no key set, or the request failed)."
+    return {"summary": text, "llm_used": success}
 
 
 # ----------------------------------------------------------------------

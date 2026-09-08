@@ -16,9 +16,9 @@
     --accent-soft: #ccfbf1;
     --amber: #d97706;
     --amber-soft: #fef3c7;
-    --bg: #f1f5f9;
+    --bg: #f4f6f8;
     --card: #ffffff;
-    --border: #e2e8f0;
+    --border: #e5e9ee;
   }
   * { box-sizing: border-box; }
   body {
@@ -26,167 +26,180 @@
     font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
     background: var(--bg);
     color: var(--ink);
+    -webkit-font-smoothing: antialiased;
   }
+
   header {
-    padding: 32px 28px 22px;
-    background: linear-gradient(135deg, #0f1b2b 0%, #14293f 100%);
+    padding: 36px 28px 26px;
+    background: radial-gradient(circle at 15% 0%, #1a3350 0%, #0f1b2b 60%);
     color: #f1f5f9;
   }
-  header h1 { margin: 0 0 6px; font-size: 25px; font-weight: 700; letter-spacing: -0.01em; }
-  header p { margin: 0; color: #94a3b8; font-size: 14.5px; max-width: 720px; line-height: 1.55; }
-  .badges { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  header .header-inner { max-width: 1080px; margin: 0 auto; }
+  header h1 { margin: 0 0 8px; font-size: 27px; font-weight: 700; letter-spacing: -0.015em; }
+  header p { margin: 0; color: #94a3b8; font-size: 14.5px; max-width: 680px; line-height: 1.6; }
+  .badges { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
   .badge {
-    font-size: 11.5px; padding: 4px 10px; border-radius: 20px;
-    background: rgba(13, 148, 136, 0.25); color: #5eead4; font-weight: 600;
-    letter-spacing: .02em;
+    font-size: 11px; padding: 5px 11px; border-radius: 20px;
+    background: rgba(13, 148, 136, 0.22); color: #5eead4; font-weight: 600;
+    letter-spacing: .03em; border: 1px solid rgba(94, 234, 212, 0.15);
   }
-  nav {
-    display: flex; gap: 4px; padding: 0 28px; background: var(--card);
-    border-bottom: 1px solid var(--border); overflow-x: auto;
+
+  /* Pill-style segmented tab control */
+  .tab-wrap { max-width: 1080px; margin: -22px auto 0; padding: 0 20px; position: relative; z-index: 5; }
+  .tab-pills {
+    display: inline-flex; background: var(--card); border-radius: 12px;
+    padding: 5px; box-shadow: 0 4px 18px rgba(15, 27, 43, 0.10); border: 1px solid var(--border);
+    gap: 2px;
   }
   .tab-btn {
-    padding: 14px 18px; border: none; background: none; cursor: pointer;
-    font-size: 14px; font-weight: 600; color: var(--muted);
-    border-bottom: 3px solid transparent; white-space: nowrap;
+    padding: 10px 20px; border: none; background: none; cursor: pointer;
+    font-size: 13.5px; font-weight: 600; color: var(--muted); border-radius: 8px;
+    transition: all .18s ease;
   }
-  .tab-btn.active { color: var(--accent-dark); border-bottom-color: var(--accent); }
-  main { max-width: 1100px; margin: 0 auto; padding: 26px 20px 60px; }
+  .tab-btn.active { background: var(--ink); color: #fff; }
+  .tab-btn:not(.active):hover { background: #f1f5f9; color: var(--ink); }
+
+  main { max-width: 1080px; margin: 0 auto; padding: 30px 20px 60px; }
   .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
+  .tab-panel.active { display: block; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
   .grid-2 { display: grid; grid-template-columns: 1.15fr 1fr; gap: 20px; }
   @media (max-width: 820px) { .grid-2 { grid-template-columns: 1fr; } }
+
   .card {
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 22px 24px;
+    border-radius: 16px;
+    padding: 24px 26px;
     margin-bottom: 20px;
-    box-shadow: 0 1px 2px rgba(15, 27, 43, 0.04);
+    box-shadow: 0 1px 3px rgba(15, 27, 43, 0.04);
   }
   .card h2 {
-    margin: 0 0 14px; font-size: 12.5px; text-transform: uppercase;
-    letter-spacing: .08em; color: var(--muted); font-weight: 700;
+    margin: 0 0 16px; font-size: 12.5px; text-transform: uppercase;
+    letter-spacing: .09em; color: var(--muted); font-weight: 700;
   }
-  #map { height: 340px; border-radius: 10px; border: 1px solid var(--border); }
+
+  #map { height: 350px; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+  .leaflet-tile-pane { filter: saturate(0.85); }
+
   select, input[type=text] {
-    width: 100%; padding: 11px 13px; border: 1px solid var(--border);
-    border-radius: 8px; font-size: 14px; background: #fff; color: var(--ink);
-    font-family: inherit;
+    width: 100%; padding: 12px 14px; border: 1px solid var(--border);
+    border-radius: 9px; font-size: 14px; background: #fbfcfd; color: var(--ink);
+    font-family: inherit; transition: border-color .15s;
   }
+  select:focus, input[type=text]:focus { outline: none; border-color: var(--accent); background: #fff; }
+
   .row { display: flex; gap: 10px; margin-bottom: 10px; }
   .row > * { flex: 1; }
+
   button.primary {
-    padding: 11px 22px; border: none; border-radius: 8px;
+    padding: 12px 22px; border: none; border-radius: 9px;
     background: var(--accent); color: white; font-size: 14px; font-weight: 600;
-    cursor: pointer; transition: background .15s;
+    cursor: pointer; transition: background .15s, transform .1s;
   }
   button.primary:hover { background: var(--accent-dark); }
+  button.primary:active { transform: scale(0.98); }
   button.primary:disabled { opacity: 0.4; cursor: default; }
-  .search-box { position: relative; margin-bottom: 12px; }
+
+  .search-box { position: relative; margin-bottom: 14px; }
   #searchResults {
     position: absolute; top: 100%; left: 0; right: 0; background: white;
-    border: 1px solid var(--border); border-radius: 8px; margin-top: 4px;
+    border: 1px solid var(--border); border-radius: 10px; margin-top: 6px;
     max-height: 220px; overflow-y: auto; z-index: 1000; display: none;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    box-shadow: 0 8px 24px rgba(15, 27, 43, 0.12);
   }
-  .search-result-item { padding: 10px 14px; cursor: pointer; font-size: 13.5px; }
+  .search-result-item { padding: 11px 15px; cursor: pointer; font-size: 13.5px; border-bottom: 1px solid #f4f6f8; }
+  .search-result-item:last-child { border-bottom: none; }
   .search-result-item:hover { background: var(--accent-soft); }
-  .estimate-num { font-size: 38px; font-weight: 800; color: var(--accent-dark); line-height: 1.05; }
-  .estimate-label { font-size: 12.5px; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: .04em; }
+
+  .estimate-num { font-size: 40px; font-weight: 800; color: var(--accent-dark); line-height: 1.05; letter-spacing: -0.02em; }
+  .estimate-label { font-size: 12px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
+
   .interval-bar {
-    height: 8px; border-radius: 4px; background: var(--border);
-    margin: 14px 0 6px; position: relative; overflow: hidden;
+    height: 8px; border-radius: 4px; background: #eef2f5;
+    margin: 16px 0 6px; position: relative; overflow: hidden;
   }
   .interval-fill {
     position: absolute; top: 0; bottom: 0;
     background: linear-gradient(90deg, var(--accent-soft), var(--accent));
     border-radius: 4px;
   }
-  .meta-line { font-size: 12.5px; color: var(--muted); line-height: 1.65; margin-top: 12px; }
+  .meta-line { font-size: 12.5px; color: var(--muted); line-height: 1.7; margin-top: 14px; }
   .meta-line strong { color: var(--ink); }
-  .chart-wrap { height: 240px; margin-top: 18px; }
-  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+
+  .chart-wrap { height: 230px; margin-top: 20px; }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
   .chip {
-    font-size: 12.5px; padding: 6px 13px; border-radius: 20px;
+    font-size: 12.5px; padding: 7px 14px; border-radius: 20px;
     background: var(--amber-soft); color: var(--amber); cursor: pointer; border: none;
-    font-weight: 600;
+    font-weight: 600; transition: opacity .15s;
   }
-  .chip:hover { opacity: 0.8; }
-  .register-toggle { display: flex; gap: 6px; margin-bottom: 12px; }
-  .register-btn {
-    flex: 1; padding: 8px; border: 1px solid var(--border); background: #fff;
-    border-radius: 7px; font-size: 12.5px; cursor: pointer; color: var(--muted); font-weight: 600;
-  }
-  .register-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-dark); }
+  .chip:hover { opacity: 0.75; }
+
   .chat-input { display: flex; gap: 8px; margin-bottom: 4px; }
   .chat-input input { flex: 1; }
+
   .answer-block {
-    margin-top: 14px; padding: 18px; background: #f8fafc;
-    border-radius: 10px; border-left: 3px solid var(--accent);
+    margin-top: 16px; padding: 19px 20px; background: #f8fafc;
+    border-radius: 12px; border-left: 3px solid var(--accent);
     font-size: 14.5px; line-height: 1.75; white-space: pre-line;
   }
-  .llm-tag { font-size: 11px; color: var(--accent-dark); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .llm-tag { font-size: 10.5px; color: var(--accent-dark); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
   .sources { margin-top: 12px; font-size: 12px; color: var(--muted); }
   .sources a { color: var(--accent-dark); text-decoration: none; }
   .sources a:hover { text-decoration: underline; }
+
   .disclaimer { font-size: 12.5px; color: var(--muted); line-height: 1.65; }
   .loading { color: var(--muted); font-style: italic; font-size: 13.5px; }
-  .compare-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px; }
-  @media (max-width: 820px) { .compare-grid { grid-template-columns: 1fr; } }
-  .compare-card {
-    border: 1px solid var(--border); border-radius: 10px; padding: 16px;
-    background: #fbfdfd;
+
+  .auto-narrative {
+    margin-top: 18px; padding: 16px 18px; background: #f8fafc;
+    border-radius: 11px; border-left: 3px solid var(--amber);
+    font-size: 13.5px; line-height: 1.7; white-space: pre-line;
   }
-  .compare-card.routed { border-color: var(--accent); background: var(--accent-soft); }
-  .compare-model-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
-  .compare-card.routed .compare-model-name { color: var(--accent-dark); }
-  .compare-num { font-size: 24px; font-weight: 800; margin: 6px 0; }
-  .routed-tag {
-    display: inline-block; font-size: 10.5px; background: var(--accent); color: white;
-    padding: 2px 8px; border-radius: 10px; margin-top: 6px; font-weight: 700;
-  }
-  .findings-doc { margin-bottom: 22px; }
-  .findings-doc h3 { font-size: 15px; margin-bottom: 8px; color: var(--accent-dark); }
-  .findings-doc p { font-size: 13.5px; line-height: 1.7; color: #334155; white-space: pre-line; }
+
   .overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   @media (max-width: 900px) { .overview-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 600px) { .overview-grid { grid-template-columns: 1fr; } }
-  .overview-card { border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
-  .overview-card h3 { font-size: 14px; margin: 0 0 4px; color: var(--ink); }
-  .overview-current { font-size: 20px; font-weight: 800; color: var(--accent-dark); margin: 2px 0 8px; }
-  .overview-chart { height: 130px; }
-  .overview-meta { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
-  .auto-narrative {
-    margin-top: 16px; padding: 14px 16px; background: #f8fafc;
-    border-radius: 9px; border-left: 3px solid var(--amber);
-    font-size: 13.5px; line-height: 1.7; white-space: pre-line;
+  .overview-card {
+    border: 1px solid var(--border); border-radius: 13px; padding: 16px;
+    transition: box-shadow .15s;
   }
+  .overview-card:hover { box-shadow: 0 4px 14px rgba(15, 27, 43, 0.06); }
+  .overview-card h3 { font-size: 14px; margin: 0 0 4px; color: var(--ink); font-weight: 650; }
+  .overview-current { font-size: 22px; font-weight: 800; color: var(--accent-dark); margin: 3px 0 8px; }
+  .overview-chart { height: 130px; }
+  .overview-meta { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Malaria Forecast Assistant</h1>
-  <p>
-    A research prototype covering six sub-Saharan African countries. Each estimate is
-    routed to whichever model was found most reliable for that region's data density,
-    shown with a calibrated uncertainty interval rather than a raw model output.
-  </p>
-  <div class="badges">
-    <span class="badge">Density-based routing</span>
-    <span class="badge">SHAP-grounded explanations</span>
-    <span class="badge">Calibrated intervals</span>
-    <span class="badge">RAG + PubMed grounded</span>
+  <div class="header-inner">
+    <h1>Malaria Forecast Assistant</h1>
+    <p>
+      A research prototype covering six sub-Saharan African countries. Each estimate is
+      routed to whichever model was found most reliable for that region's data density,
+      shown with a calibrated uncertainty interval rather than a raw model output.
+    </p>
+    <div class="badges">
+      <span class="badge">Density-based routing</span>
+      <span class="badge">SHAP-grounded explanations</span>
+      <span class="badge">Calibrated intervals</span>
+      <span class="badge">RAG + PubMed grounded</span>
+    </div>
   </div>
 </header>
 
-<nav>
-  <button class="tab-btn active" data-tab="estimate">Estimate</button>
-  <button class="tab-btn" data-tab="overview">All Countries</button>
-  <button class="tab-btn" data-tab="compare">Compare Models</button>
-  <button class="tab-btn" data-tab="ask">Ask</button>
-  <button class="tab-btn" data-tab="about">Methodology</button>
-</nav>
+<div class="tab-wrap">
+  <div class="tab-pills">
+    <button class="tab-btn active" data-tab="estimate">Estimate</button>
+    <button class="tab-btn" data-tab="overview">All Countries</button>
+    <button class="tab-btn" data-tab="ask">Ask</button>
+  </div>
+</div>
 
 <main>
 
@@ -200,7 +213,7 @@
           <div id="searchResults"></div>
         </div>
         <div id="map"></div>
-        <div class="row" style="margin-top: 12px;">
+        <div class="row" style="margin-top: 14px;">
           <select id="countrySelect"><option value="">Loading countries...</option></select>
           <select id="regionSelect"><option value="">Select a country first</option></select>
         </div>
@@ -222,20 +235,10 @@
   <div class="tab-panel" id="tab-overview">
     <div class="card">
       <h2>Forecasting trends across all six countries</h2>
-      <div id="overviewGrid" class="overview-grid"><div class="loading">Loading...</div></div>
-    </div>
-  </div>
-
-  <!-- COMPARE MODELS TAB -->
-  <div class="tab-panel" id="tab-compare">
-    <div class="card">
-      <h2>Compare all three models on the same region</h2>
-      <div class="row">
-        <select id="compareCountrySelect"><option value="">Select a country</option></select>
-        <select id="compareRegionSelect"><option value="">Select a country first</option></select>
+      <div id="overviewSummary" class="auto-narrative" style="margin-bottom: 18px;">
+        <div class="loading">Generating summary...</div>
       </div>
-      <button class="primary" id="compareBtn" disabled>Compare</button>
-      <div id="compareResult"></div>
+      <div id="overviewGrid" class="overview-grid"><div class="loading">Loading...</div></div>
     </div>
   </div>
 
@@ -243,10 +246,6 @@
   <div class="tab-panel" id="tab-ask">
     <div class="card">
       <h2>Ask in plain language</h2>
-      <div class="register-toggle">
-        <button class="register-btn active" data-register="researcher">Researcher</button>
-        <button class="register-btn" data-register="health_officer">Health officer</button>
-      </div>
       <div class="chip-row">
         <button class="chip" data-q="What's the current malaria situation in Tanzania, and is it driven by climate or interventions?">Tanzania: climate vs interventions</button>
         <button class="chip" data-q="What's the malaria estimate for Uganda?">Uganda estimate</button>
@@ -261,22 +260,13 @@
     </div>
   </div>
 
-  <!-- ABOUT / METHODOLOGY TAB -->
-  <div class="tab-panel" id="tab-about">
-    <div class="card">
-      <h2>Project findings and methodology</h2>
-      <div id="findingsContent"><div class="loading">Loading...</div></div>
-    </div>
-  </div>
-
   <div class="card disclaimer">
     This system reflects historical survey data through 2015 and does not receive live
     updates. Estimates describe the most recent modeled status, not a forecast into an
     unobserved future year. Intervals are statistically calibrated against historical
     forecast error, not raw model confidence. The Graph Neural ODE architecture,
     evaluated during this project, is not used to serve predictions, as it was
-    consistently the least reliable model tested; it is documented as a negative
-    result, not deployed.
+    consistently the least reliable model tested.
   </div>
 
 </main>
@@ -287,7 +277,6 @@ let regionsData = {};
 let flatRegionList = [];
 let map, markersLayer;
 let trendChartInstance = null;
-let currentRegister = "researcher";
 
 // ---------------- Tabs ----------------
 document.querySelectorAll(".tab-btn").forEach(btn => {
@@ -296,7 +285,6 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
-    if (btn.dataset.tab === "about") loadFindings();
     if (btn.dataset.tab === "overview") loadOverview();
   });
 });
@@ -314,24 +302,25 @@ async function loadRegions() {
   const optionsHtml = '<option value="">Select a country</option>' +
     Object.keys(regionsData).map(c => `<option value="${c}">${c}</option>`).join("");
   document.getElementById("countrySelect").innerHTML = optionsHtml;
-  document.getElementById("compareCountrySelect").innerHTML = optionsHtml;
 
   initMap();
 }
 
 function initMap() {
-  map = L.map("map").setView([-1, 25], 3.3);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors",
+  map = L.map("map", { zoomControl: true, attributionControl: false }).setView([-1, 25], 3.3);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 19,
   }).addTo(map);
 
   markersLayer = L.layerGroup().addTo(map);
   Object.entries(regionsData).forEach(([country, regions]) => {
     regions.forEach(r => {
       const marker = L.circleMarker([r.lat, r.lon], {
-        radius: 5, color: "#0d9488", fillColor: "#0d9488", fillOpacity: 0.55, weight: 1.5,
+        radius: 5.5, color: "#0d9488", fillColor: "#0d9488", fillOpacity: 0.55, weight: 1.6,
       }).addTo(markersLayer);
-      marker.bindTooltip(`${r.admin}, ${country}`);
+      marker.bindTooltip(`${r.admin}, ${country}`, { direction: "top", offset: [0, -4] });
+      marker.on("mouseover", () => marker.setStyle({ fillOpacity: 0.9, radius: 7 }));
+      marker.on("mouseout", () => marker.setStyle({ fillOpacity: 0.55, radius: 5.5 }));
       marker.on("click", () => selectRegion(country, r.region_id));
     });
   });
@@ -361,18 +350,6 @@ document.getElementById("countrySelect").addEventListener("change", (e) => {
   }
   populateRegionSelect("regionSelect", country);
   lookupBtn.disabled = false;
-});
-
-document.getElementById("compareCountrySelect").addEventListener("change", (e) => {
-  const country = e.target.value;
-  const btn = document.getElementById("compareBtn");
-  if (!country) {
-    document.getElementById("compareRegionSelect").innerHTML = '<option value="">Select a country first</option>';
-    btn.disabled = true;
-    return;
-  }
-  populateRegionSelect("compareRegionSelect", country);
-  btn.disabled = false;
 });
 
 // ---------------- Search ----------------
@@ -420,40 +397,35 @@ async function renderTrendChart(regionId, currentEstimate, lower, upper) {
 
     const labels = [...hist.years.map(String), "Current"];
     const values = [...hist.prevalence, currentEstimate];
-    const bandLower = hist.years.map(() => null).concat([lower]);
-    const bandUpper = hist.years.map(() => null).concat([upper]);
 
     if (trendChartInstance) trendChartInstance.destroy();
     const ctx = document.getElementById("trendChart").getContext("2d");
     const gradient = ctx.createLinearGradient(0, 0, 0, 220);
-    gradient.addColorStop(0, "rgba(13,148,136,0.28)");
+    gradient.addColorStop(0, "rgba(13,148,136,0.25)");
     gradient.addColorStop(1, "rgba(13,148,136,0.02)");
 
     trendChartInstance = new Chart(ctx, {
       type: "line",
       data: {
         labels,
-        datasets: [
-          {
-            label: "Prevalence",
-            data: values,
-            borderColor: "#0d9488",
-            backgroundColor: gradient,
-            pointRadius: labels.map((l) => l === "Current" ? 7 : 2.5),
-            pointBackgroundColor: labels.map((l) => l === "Current" ? "#d97706" : "#0d9488"),
-            pointBorderColor: "#fff",
-            pointBorderWidth: 1.5,
-            fill: true,
-            tension: 0.3,
-            borderWidth: 2.2,
-          },
-        ]
+        datasets: [{
+          data: values,
+          borderColor: "#0d9488",
+          backgroundColor: gradient,
+          pointRadius: labels.map((l) => l === "Current" ? 7 : 2.5),
+          pointBackgroundColor: labels.map((l) => l === "Current" ? "#d97706" : "#0d9488"),
+          pointBorderColor: "#fff",
+          pointBorderWidth: 1.5,
+          fill: true,
+          tension: 0.3,
+          borderWidth: 2.2,
+        }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          y: { ticks: { callback: (v) => (v*100).toFixed(0) + "%" }, min: 0, grid: { color: "#e2e8f0" } },
+          y: { ticks: { callback: (v) => (v*100).toFixed(0) + "%" }, min: 0, grid: { color: "#eef1f4" } },
           x: { grid: { display: false } },
         }
       }
@@ -466,7 +438,14 @@ let overviewLoaded = false;
 async function loadOverview() {
   if (overviewLoaded) return;
   const grid = document.getElementById("overviewGrid");
+  const summaryDiv = document.getElementById("overviewSummary");
   grid.innerHTML = '<div class="loading">Loading all six countries...</div>';
+
+  fetch(`${API_BASE}/overview/summary`).then(r => r.json()).then(s => {
+    const tag = s.llm_used ? '<div class="llm-tag">Groq / Llama 3.3</div>' : '<div class="llm-tag">LLM unavailable</div>';
+    summaryDiv.innerHTML = `${tag}${s.summary}`;
+  }).catch(() => { summaryDiv.innerHTML = "Summary unavailable right now."; });
+
   try {
     const res = await fetch(`${API_BASE}/overview`);
     const data = await res.json();
@@ -495,7 +474,7 @@ async function loadOverview() {
           responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            y: { ticks: { display: false }, min: 0, grid: { color: "#f1f5f9" } },
+            y: { ticks: { display: false }, min: 0, grid: { color: "#f4f6f8" } },
             x: { ticks: { display: false }, grid: { display: false } },
           }
         }
@@ -542,8 +521,6 @@ document.getElementById("lookupBtn").addEventListener("click", async () => {
     return;
   }
 
-  // auto-generate a grounded LLM narrative for this exact region -- separate
-  // try/catch so a narrative failure never wipes out the already-successful estimate
   narrativeDiv.innerHTML = '<div class="loading">Generating explanation...</div>';
   try {
     const askRes = await fetch(`${API_BASE}/ask`, {
@@ -551,7 +528,6 @@ document.getElementById("lookupBtn").addEventListener("click", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         query: `What is the current malaria situation in ${document.getElementById("resultTitle").textContent}, and why?`,
-        register: "researcher",
       }),
     });
     const askData = await askRes.json();
@@ -563,53 +539,7 @@ document.getElementById("lookupBtn").addEventListener("click", async () => {
   }
 });
 
-// ---------------- Compare Models ----------------
-document.getElementById("compareBtn").addEventListener("click", async () => {
-  const country = document.getElementById("compareCountrySelect").value;
-  const regionId = document.getElementById("compareRegionSelect").value;
-  const resultDiv = document.getElementById("compareResult");
-  resultDiv.innerHTML = '<div class="loading">Running all three models...</div>';
-
-  try {
-    const res = await fetch(`${API_BASE}/compare`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ country, region_id: parseInt(regionId) }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || "Request failed");
-
-    const order = ["xgboost", "lightgbm", "transformer"];
-    const cardsHtml = order.map(m => {
-      const r = data.results[m];
-      if (r.error) return `<div class="compare-card"><div class="compare-model-name">${m}</div><div class="meta-line">${r.error}</div></div>`;
-      const routed = m === data.routed_model;
-      return `
-        <div class="compare-card ${routed ? "routed" : ""}">
-          <div class="compare-model-name">${m}</div>
-          <div class="compare-num">${(r.current_estimate * 100).toFixed(1)}%</div>
-          <div class="meta-line">${(r.interval_90_lower*100).toFixed(1)}% &ndash; ${(r.interval_90_upper*100).toFixed(1)}%</div>
-          ${routed ? '<span class="routed-tag">Routed choice</span>' : ""}
-        </div>`;
-    }).join("");
-
-    resultDiv.innerHTML = `
-      <div class="meta-line" style="margin-bottom:6px;">${data.routing_reason}</div>
-      <div class="compare-grid">${cardsHtml}</div>`;
-  } catch (err) {
-    resultDiv.innerHTML = `<div class="meta-line">Error: ${err.message}</div>`;
-  }
-});
-
 // ---------------- Ask ----------------
-document.querySelectorAll(".register-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".register-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentRegister = btn.dataset.register;
-  });
-});
-
 async function askQuestion(query) {
   const resultDiv = document.getElementById("chatResult");
   resultDiv.innerHTML = '<div class="loading">Thinking...</div>';
@@ -617,7 +547,7 @@ async function askQuestion(query) {
     const res = await fetch(`${API_BASE}/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, register: currentRegister }),
+      body: JSON.stringify({ query }),
     });
     const data = await res.json();
 
@@ -647,25 +577,6 @@ document.querySelectorAll(".chip").forEach(chip => {
     askQuestion(chip.dataset.q);
   });
 });
-
-// ---------------- Methodology / findings ----------------
-let findingsLoaded = false;
-async function loadFindings() {
-  if (findingsLoaded) return;
-  const container = document.getElementById("findingsContent");
-  try {
-    const res = await fetch(`${API_BASE}/findings`);
-    const data = await res.json();
-    container.innerHTML = data.documents.map(d => `
-      <div class="findings-doc">
-        <h3>${d.title}</h3>
-        <p>${d.text}</p>
-      </div>`).join("");
-    findingsLoaded = true;
-  } catch (err) {
-    container.innerHTML = `<div class="meta-line">Error loading findings: ${err.message}</div>`;
-  }
-}
 
 loadRegions();
 </script>
