@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from huggingface_hub import hf_hub_download
 
-HF_REPO_ID = "YOUR-HF-USERNAME/malaria-iaai"   # <-- set this to your real repo
+HF_REPO_ID = "vikalp090/malaria-iaai"   # <-- set this to your real repo
 
 
 class Time2Vec(nn.Module):
