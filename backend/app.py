@@ -15,9 +15,9 @@ Serves the static frontend from /frontend as well, so a single deploy
 import os
 import glob
 import json
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -35,6 +35,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def all_exceptions_as_json(request: Request, exc: Exception):
+    """Ensures the frontend always gets valid JSON back, even on an
+    unexpected server error, instead of a plain-text 500 page that breaks
+    res.json() parsing on the client."""
+    print(f"Unhandled error on {request.url.path}: {exc}")
+    return JSONResponse(status_code=500, content={"detail": f"Server error: {str(exc)}"})
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 KNOWLEDGE_DIR = os.path.join(os.path.dirname(__file__), "knowledge")
@@ -234,7 +243,7 @@ REGISTER_INSTRUCTIONS = {
 
 
 def _compose_answer(parsed: dict, forecast_result: dict | None, retrieved: list,
-                     register: str) -> str:
+                     register: str) -> tuple[str, bool]:
     context_text = "\n\n".join(f"[{r['source']}] {r['text']}" for r in retrieved)
     forecast_text = json.dumps(forecast_result, indent=2) if forecast_result else "No specific region matched."
 
@@ -254,47 +263,51 @@ def _compose_answer(parsed: dict, forecast_result: dict | None, retrieved: list,
         )
 
     if GROQ_API_KEY:
-        from groq import Groq
-        client = Groq(api_key=GROQ_API_KEY)
-        system_prompt = (
-            "You are a malaria prevalence research assistant built on a real, "
-            "evaluated forecasting system. You must ONLY use the numeric forecast "
-            "data, SHAP explanation, and retrieved context given to you -- never "
-            "invent numbers, dates, or claims not present in the provided data. "
-            "If data is missing, say so plainly rather than guessing. Cite which "
-            "source (project findings or PubMed) any non-numeric claim comes from. "
-            "Respond in English. "
-            f"{REGISTER_INSTRUCTIONS.get(register, REGISTER_INSTRUCTIONS['researcher'])} "
-            "\n\nStructure every answer in exactly three labeled sections, on their own "
-            "lines:\n"
-            "Estimate: one or two sentences stating the numeric result and interval, if available.\n"
-            "Reasoning: explain WHY, referencing the specific SHAP feature contributions "
-            "by name and direction if given, and naming which retrieved finding "
-            "supports any claim about climate, interventions, or model choice. Be "
-            "concrete and specific, not generic.\n"
-            "Caveats: one sentence on what this estimate does NOT account for "
-            "(e.g. no live data feed, model-specific limitations, small region pool), "
-            "only if genuinely relevant to this answer.\n"
-            "Do not skip the Reasoning section even for short questions."
-        )
-        user_prompt = (
-            f"User question: {parsed['raw_query']}\n\n"
-            f"Forecast data (use these exact numbers if present):\n{forecast_text}"
-            f"{explanation_text}\n\n"
-            f"Retrieved context:\n{context_text}\n\n"
-            "Answer the user's question using only the above."
-        )
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            max_tokens=800,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-        )
-        return completion.choices[0].message.content
+        try:
+            from groq import Groq
+            client = Groq(api_key=GROQ_API_KEY)
+            system_prompt = (
+                "You are a malaria prevalence research assistant built on a real, "
+                "evaluated forecasting system. You must ONLY use the numeric forecast "
+                "data, SHAP explanation, and retrieved context given to you -- never "
+                "invent numbers, dates, or claims not present in the provided data. "
+                "If data is missing, say so plainly rather than guessing. Cite which "
+                "source (project findings or PubMed) any non-numeric claim comes from. "
+                "Respond in English. "
+                f"{REGISTER_INSTRUCTIONS.get(register, REGISTER_INSTRUCTIONS['researcher'])} "
+                "\n\nStructure every answer in exactly three labeled sections, on their own "
+                "lines:\n"
+                "Estimate: one or two sentences stating the numeric result and interval, if available.\n"
+                "Reasoning: explain WHY, referencing the specific SHAP feature contributions "
+                "by name and direction if given, and naming which retrieved finding "
+                "supports any claim about climate, interventions, or model choice. Be "
+                "concrete and specific, not generic.\n"
+                "Caveats: one sentence on what this estimate does NOT account for "
+                "(e.g. no live data feed, model-specific limitations, small region pool), "
+                "only if genuinely relevant to this answer.\n"
+                "Do not skip the Reasoning section even for short questions."
+            )
+            user_prompt = (
+                f"User question: {parsed['raw_query']}\n\n"
+                f"Forecast data (use these exact numbers if present):\n{forecast_text}"
+                f"{explanation_text}\n\n"
+                f"Retrieved context:\n{context_text}\n\n"
+                "Answer the user's question using only the above."
+            )
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                max_tokens=800,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+            return completion.choices[0].message.content, True
+        except Exception as e:
+            print(f"Groq call failed, falling back to template answer: {e}")
+            # falls through to the deterministic fallback below
 
-    # ---- deterministic fallback if no API key is configured ----
+    # ---- deterministic fallback if no API key is configured, or Groq call failed ----
     parts = []
     if forecast_result:
         parts.append(
@@ -310,7 +323,7 @@ def _compose_answer(parsed: dict, forecast_result: dict | None, retrieved: list,
         "(Set GROQ_API_KEY on the server to enable full LLM-composed, "
         "SHAP-grounded answers -- free at console.groq.com.)"
     )
-    return " ".join(parts)
+    return " ".join(parts), False
 
 
 @app.post("/ask")
@@ -330,7 +343,7 @@ def ask(req: AskRequest):
             forecast_result = None
 
     retrieved = rag_index.retrieve(req.query, k=4)
-    answer = _compose_answer(parsed, forecast_result, retrieved, req.register)
+    answer, llm_used = _compose_answer(parsed, forecast_result, retrieved, req.register)
 
     seen, sources = set(), []
     for r in retrieved:
@@ -343,7 +356,7 @@ def ask(req: AskRequest):
         "parsed_query": parsed,
         "forecast_data": forecast_result,
         "sources": sources,
-        "llm_used": bool(GROQ_API_KEY),
+        "llm_used": llm_used,
     }
 
 

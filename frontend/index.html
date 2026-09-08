@@ -474,7 +474,8 @@ async function loadOverview() {
       <div class="overview-card">
         <h3>${c.country}</h3>
         <div class="overview-current">${c.current_estimate !== null ? (c.current_estimate*100).toFixed(1)+"%" : "N/A"}</div>
-        <div class="overview-chart"><canvas id="ov-${c.country.replace(/\\s/g,'_')}"></canvas></div>
+        ${c.interval_90_lower !== null ? renderIntervalBar(c.interval_90_lower, c.interval_90_upper) : ""}
+        <div class="overview-chart"><canvas id="ov-${c.country.replace(/\s/g,'_')}"></canvas></div>
         <div class="overview-meta">${c.n_regions} regions &middot; routed to ${c.model_used}</div>
       </div>`).join("");
 
@@ -536,22 +537,29 @@ document.getElementById("lookupBtn").addEventListener("click", async () => {
       </div>`;
 
     renderTrendChart(data.region_id, data.current_estimate, data.interval_90_lower, data.interval_90_upper);
+  } catch (err) {
+    resultDiv.innerHTML = `<div class="meta-line">Error: ${err.message}</div>`;
+    return;
+  }
 
-    // auto-generate a grounded LLM narrative for this exact region, no typing required
-    narrativeDiv.innerHTML = '<div class="loading">Generating explanation...</div>';
+  // auto-generate a grounded LLM narrative for this exact region -- separate
+  // try/catch so a narrative failure never wipes out the already-successful estimate
+  narrativeDiv.innerHTML = '<div class="loading">Generating explanation...</div>';
+  try {
     const askRes = await fetch(`${API_BASE}/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        query: `What is the current malaria situation in ${data.admin}, ${data.country}, and why?`,
+        query: `What is the current malaria situation in ${document.getElementById("resultTitle").textContent}, and why?`,
         register: "researcher",
       }),
     });
     const askData = await askRes.json();
+    if (!askRes.ok) throw new Error(askData.detail || "Explanation request failed");
     const tag = askData.llm_used ? '<div class="llm-tag">Groq / Llama 3.3</div>' : '<div class="llm-tag">Template mode (no LLM key set)</div>';
     narrativeDiv.innerHTML = `<div class="auto-narrative">${tag}${askData.answer}</div>`;
   } catch (err) {
-    resultDiv.innerHTML = `<div class="meta-line">Error: ${err.message}</div>`;
+    narrativeDiv.innerHTML = `<div class="auto-narrative">Explanation unavailable right now: ${err.message}</div>`;
   }
 });
 
